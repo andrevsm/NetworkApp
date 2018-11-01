@@ -1,7 +1,6 @@
 package br.com.tecnologia.positivo.networkinformation;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -31,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
             android.Manifest.permission.READ_PHONE_STATE,
     };
     private ListAdapter adapter;
-    private HashMap itemMap = new HashMap();
+    private HashMap<String, String> itemMap = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,8 +66,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadData() {
-        String NetTypeStr = getNetWorkType();
-        Log.d("TESTE", "NetTypeStr: " + NetTypeStr);
+        String netTypeStr = getNetWorkType();
+        itemMap.put("Network Type",netTypeStr);
         if (hasPermissions(PERMISSIONS)) {
             getCellInfo();
         } else
@@ -79,30 +78,26 @@ public class MainActivity extends AppCompatActivity {
             public void onSignalStrengthsChanged(SignalStrength signalStrength) {
                 super.onSignalStrengthsChanged(signalStrength);
                 String signalStrJson = new Gson().toJson(signalStrength);
+                Log.d("TESTE","signalStrJson: "+signalStrJson);
                 String[] itemList = signalStrJson.replaceAll("[\"{}]", "").split(",");
                 for (String anItemList : itemList) {
                     String[] split = anItemList.split(":");
                     String attributeName = split[0];
                     String attributeValueString = split[1];
+                    attributeName = removePreFix(attributeName);
                     try {
                         int attributeValue = Integer.parseInt(attributeValueString);
                         if (isValidValue(attributeName, attributeValue)){
-                            attributeName = removePreFix(attributeName);
                             itemMap.put(attributeName, attributeValueString);
                         }
-                        Log.d("TESTE","INT: "+attributeValueString);
                     }catch (Exception e){
-                        Log.d("TESTE","STRING: "+attributeValueString);
-                        attributeName = removePreFix(attributeName);
                         itemMap.put(attributeName, attributeValueString);
                     }
-
                 }
                 adapter.updateItems(itemMap);
             }
         };
         tm.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
-
     }
 
     public  boolean isValidValue(String attributeName,int attributeValue){
@@ -174,13 +169,18 @@ public class MainActivity extends AppCompatActivity {
                 String suffix = removeSuffix(item, ":");
                 String[] attribute = suffix.split("=");
                 String attributeName = attribute[0];
-                String attributeValue = attribute[1];
-
-                String s = removePreFix(attributeName);
                 if (attribute.length>1){
-                    itemMap.put(s, attributeValue);
-                }else{
-                    itemMap.put(s,"");
+                    String attributeValueString = attribute[1];
+                    try {
+                        int attributeValue = Integer.parseInt(attributeValueString);
+                        if (isValidValue(attributeName, attributeValue)){
+                            String s = removePreFix(attributeName);
+                            itemMap.put(s, attributeValueString);
+                        }
+                    }catch (Exception e){
+                        String s = removePreFix(attributeName);
+                        itemMap.put(s, attributeValueString);
+                    }
                 }
             }
         }
