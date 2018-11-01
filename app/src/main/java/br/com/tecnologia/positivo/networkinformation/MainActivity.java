@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int INVALID = Integer.MAX_VALUE;
+
     private static final int LOCATION_REQUEST_CODE = 123;//any number
     TelephonyManager tm;
     int PERMISSION_ALL = 1;
@@ -161,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
         int invalidWcdmaSignalStrength = 99;
         int invalidWcdmaRscpAsu = 255;
         int invalidLteRsrpBoost = 0;
+        int INVALID = Integer.MAX_VALUE;
         switch (attributeName) {
             case "mGsmSignalStrength":
                 return attributeValue != invalidGsmSignalStrength;
@@ -178,6 +179,12 @@ public class MainActivity extends AppCompatActivity {
                 return attributeValue != invalidEvdoSnr;
             case "mLteSignalStrength":
                 return attributeValue != invalidLteSignalStrength;
+            case "mWcdmaSignalStrength":
+                return attributeValue != invalidWcdmaSignalStrength;
+            case "mWcdmaRscpAsu":
+                return attributeValue != invalidWcdmaRscpAsu;
+            case "mLteRsrpBoost":
+                return attributeValue != invalidLteRsrpBoost;
             case "mLteRsrp":
             case "mLteRsrq":
             case "mLteRssnr":
@@ -185,12 +192,6 @@ public class MainActivity extends AppCompatActivity {
             case "mTdScdmaRscp":
             case "mWcdmaRscp":
                 return attributeValue != INVALID;
-            case "mWcdmaSignalStrength":
-                return attributeValue != invalidWcdmaSignalStrength;
-            case "mWcdmaRscpAsu":
-                return attributeValue != invalidWcdmaRscpAsu;
-            case "mLteRsrpBoost":
-                return attributeValue != invalidLteRsrpBoost;
             default:
                 return true;
         }
@@ -259,6 +260,8 @@ public class MainActivity extends AppCompatActivity {
             }
             adapter.updateItems(itemMap);
         }
+        else
+            requestPermission();
     }
     public String removeSuffix(final String s, final String suffix){
         if (s != null && s.contains(suffix)) {
