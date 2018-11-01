@@ -47,13 +47,13 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.GeneralViewHol
     void updateItems(HashMap<String, String> map) {
         items.clear();
         for (String key: map.keySet()) {
-            Log.d("TESTE","item: "+map.get(key));
             String item = map.get(key);
             if (TextUtils.isEmpty(item)) {
                 items.add(key);
             }else
                 items.add(key+": "+ item);
         }
+        notifyDataSetChanged();
     }
 
 

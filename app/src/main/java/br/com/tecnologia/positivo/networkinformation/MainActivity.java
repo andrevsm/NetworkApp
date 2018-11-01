@@ -1,9 +1,12 @@
 package br.com.tecnologia.positivo.networkinformation;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -13,16 +16,23 @@ import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 
 import com.google.gson.Gson;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
     private static final int INVALID = Integer.MAX_VALUE;
+    private static final int LOCATION_REQUEST_CODE = 123;//any number
     TelephonyManager tm;
     int PERMISSION_ALL = 1;
     String[] PERMISSIONS = {
@@ -31,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     };
     private ListAdapter adapter;
     private HashMap<String, String> itemMap = new HashMap<>();
+    private boolean onlyValidItems = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,9 +53,40 @@ public class MainActivity extends AppCompatActivity {
         loadData();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.menu_only_valid:
+                onlyValidItems = true;
+                loadData();
+                return true;
+            case R.id.menu_all:
+                onlyValidItems = false;
+                loadData();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+
+    }
+
     private void setUI() {
+        updateTimeLabel();
         setListener();
         setRecycleView();
+    }
+
+    private void updateTimeLabel() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-YYY HH:mm:ss", Locale.getDefault());
+        String updateText = "Ultima atualização: " + dateFormat.format(new Date());
+        ((TextView) findViewById(R.id.tvi_update_date)).setText(updateText);
     }
 
     private void setRecycleView() {
@@ -52,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         adapter = new ListAdapter(new ArrayList<String>());
         rviListItems.setLayoutManager(new LinearLayoutManager(this));
         rviListItems.setHasFixedSize(true);
+
         rviListItems.addItemDecoration(new DividerItemDecoration(rviListItems.getContext(), DividerItemDecoration.VERTICAL));
         rviListItems.setAdapter(adapter);
     }
@@ -66,41 +109,47 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadData() {
+        itemMap.clear();
         String netTypeStr = getNetWorkType();
-        itemMap.put("Network Type",netTypeStr);
-        if (hasPermissions(PERMISSIONS)) {
-            getCellInfo();
-        } else
-            ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
+        itemMap.put("Network Type", netTypeStr);
 
+        getCellInfo();
+        setPhoneStateListener();
+    }
+
+    private void setPhoneStateListener() {
         PhoneStateListener phoneStateListener = new PhoneStateListener() {
             @Override
             public void onSignalStrengthsChanged(SignalStrength signalStrength) {
                 super.onSignalStrengthsChanged(signalStrength);
                 String signalStrJson = new Gson().toJson(signalStrength);
-                Log.d("TESTE","signalStrJson: "+signalStrJson);
                 String[] itemList = signalStrJson.replaceAll("[\"{}]", "").split(",");
                 for (String anItemList : itemList) {
                     String[] split = anItemList.split(":");
                     String attributeName = split[0];
                     String attributeValueString = split[1];
                     attributeName = removePreFix(attributeName);
-                    try {
-                        int attributeValue = Integer.parseInt(attributeValueString);
-                        if (isValidValue(attributeName, attributeValue)){
+                    if (onlyValidItems) {
+                        try {
+                            int attributeValue = Integer.parseInt(attributeValueString);
+                            if (isValidValue(attributeName, attributeValue)) {
+                                itemMap.put(attributeName, attributeValueString);
+                            }else Log.d("TESTE","Invalido Value: "+attributeValue);
+                        } catch (Exception e) {
                             itemMap.put(attributeName, attributeValueString);
                         }
-                    }catch (Exception e){
+                    } else{
                         itemMap.put(attributeName, attributeValueString);
                     }
                 }
                 adapter.updateItems(itemMap);
+                updateTimeLabel();
             }
         };
         tm.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
     }
 
-    public  boolean isValidValue(String attributeName,int attributeValue){
+    public boolean isValidValue(String attributeName, int attributeValue) {
         int invalidGsmSignalStrength = 99;
         int invalidGsmBitErrorRate = -1;
         int invalidCdmaDbm = -1;
@@ -154,37 +203,62 @@ public class MainActivity extends AppCompatActivity {
             return s.substring(1);
         else if (startsWithIs) {
             return s.substring(2);
-        }else
+        } else
             return s;
     }
-    private void getCellInfo() {
-        List<CellInfo> cellInfoList = tm.getAllCellInfo();
-        for (CellInfo cellInfo : cellInfoList)
-        {
-            String cellInfoString = cellInfo.toString();
-            String removedSpecialCharacter = cellInfoString.replaceAll("[\"{}]", "");
-            String[] items = removedSpecialCharacter.split(" ");
 
-            for (String item:items){
-                String suffix = removeSuffix(item, ":");
-                String[] attribute = suffix.split("=");
-                String attributeName = attribute[0];
-                if (attribute.length>1){
-                    String attributeValueString = attribute[1];
-                    try {
-                        int attributeValue = Integer.parseInt(attributeValueString);
-                        if (isValidValue(attributeName, attributeValue)){
-                            String s = removePreFix(attributeName);
-                            itemMap.put(s, attributeValueString);
-                        }
-                    }catch (Exception e){
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode== LOCATION_REQUEST_CODE) {
+            if (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Log.i("TESTE", "Permission has been denied by user");
+                requestPermission();
+            } else {
+                loadData();
+            }
+        }
+    }
+    private Boolean hasPermission(){
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+    private void requestPermission() {
+        ActivityCompat.requestPermissions(this,PERMISSIONS,LOCATION_REQUEST_CODE);
+    }
+
+    private void getCellInfo() {
+        if (hasPermission()){
+            List<CellInfo> cellInfoList = tm.getAllCellInfo();
+            for (CellInfo cellInfo : cellInfoList)
+            {
+                String cellInfoString = cellInfo.toString();
+                String removedSpecialCharacter = cellInfoString.replaceAll("[\"{}]", "");
+                String[] items = removedSpecialCharacter.split(" ");
+
+                for (String item:items){
+                    String suffix = removeSuffix(item, ":");
+                    String[] attribute = suffix.split("=");
+                    String attributeName = attribute[0];
+                    if (attribute.length>1){
+                        String attributeValueString = attribute[1];
                         String s = removePreFix(attributeName);
-                        itemMap.put(s, attributeValueString);
+                        if (onlyValidItems){
+                            try {
+                                int attributeValue = Integer.parseInt(attributeValueString);
+                                if (isValidValue(attributeName, attributeValue)){
+                                    itemMap.put(s, attributeValueString);
+                                }
+                            }catch (Exception e){
+                                itemMap.put(s, attributeValueString);
+                            }
+                        }else
+                            itemMap.put(s, attributeValueString);
                     }
                 }
             }
+            adapter.updateItems(itemMap);
         }
-        adapter.updateItems(itemMap);
     }
     public String removeSuffix(final String s, final String suffix){
         if (s != null && s.contains(suffix)) {
@@ -194,19 +268,6 @@ public class MainActivity extends AppCompatActivity {
             else return split[0].replace(":","");
         }
         return s;
-    }
-
-
-
-    public boolean hasPermissions(String... permissions) {
-        if (permissions != null) {
-            for (String permission : permissions) {
-                if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     private String getNetWorkType() {
