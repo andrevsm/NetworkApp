@@ -111,8 +111,8 @@ public class MainActivity extends AppCompatActivity {
     private void loadData() {
         itemMap.clear();
         String netTypeStr = getNetWorkType();
-        itemMap.put("Network Type", netTypeStr);
 
+        itemMap.put("Network Type", netTypeStr);
         getCellInfo();
         setPhoneStateListener();
     }
@@ -123,7 +123,9 @@ public class MainActivity extends AppCompatActivity {
             public void onSignalStrengthsChanged(SignalStrength signalStrength) {
                 super.onSignalStrengthsChanged(signalStrength);
                 String signalStrJson = new Gson().toJson(signalStrength);
+                Log.d("TESTE","JSON PhoneState: "+signalStrJson);
                 String[] itemList = signalStrJson.replaceAll("[\"{}]", "").split(",");
+                itemMap.put("====="," PhoneState ====");
                 for (String anItemList : itemList) {
                     String[] split = anItemList.split(":");
                     String attributeName = split[0];
@@ -132,9 +134,10 @@ public class MainActivity extends AppCompatActivity {
                     if (onlyValidItems) {
                         try {
                             int attributeValue = Integer.parseInt(attributeValueString);
+                            Log.d("TESTE",attributeName+" - "+attributeValue+"="+isValidValue(attributeName, attributeValue));
                             if (isValidValue(attributeName, attributeValue)) {
                                 itemMap.put(attributeName, attributeValueString);
-                            }else Log.d("TESTE","Invalido Value: "+attributeValue);
+                            }else Log.d("TESTE","Invalido Value: "+attributeName+":"+attributeValue);
                         } catch (Exception e) {
                             itemMap.put(attributeName, attributeValueString);
                         }
@@ -190,6 +193,7 @@ public class MainActivity extends AppCompatActivity {
             case "mLteRssnr":
             case "mLteCqi":
             case "mTdScdmaRscp":
+            case "mGsmRssiQdbm":
             case "mWcdmaRscp":
                 return attributeValue != INVALID;
             default:
@@ -231,6 +235,8 @@ public class MainActivity extends AppCompatActivity {
     private void getCellInfo() {
         if (hasPermission()){
             List<CellInfo> cellInfoList = tm.getAllCellInfo();
+            Log.d("TESTE","JSON CellInfo: "+new Gson().toJson(cellInfoList));
+            itemMap.put("===="," CellInfo ====");
             for (CellInfo cellInfo : cellInfoList)
             {
                 String cellInfoString = cellInfo.toString();
@@ -249,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
                                 int attributeValue = Integer.parseInt(attributeValueString);
                                 if (isValidValue(attributeName, attributeValue)){
                                     itemMap.put(s, attributeValueString);
-                                }
+                                }else Log.d("TESTE","Invalido Value: "+attributeName+":"+attributeValue);
                             }catch (Exception e){
                                 itemMap.put(s, attributeValueString);
                             }
