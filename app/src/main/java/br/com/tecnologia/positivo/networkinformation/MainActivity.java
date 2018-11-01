@@ -188,9 +188,9 @@ public class MainActivity extends AppCompatActivity {
                 return attributeValue != invalidWcdmaRscpAsu;
             case "mLteRsrpBoost":
                 return attributeValue != invalidLteRsrpBoost;
-            case "mLteRsrp":
-            case "mLteRsrq":
-            case "mLteRssnr":
+            case "LteRsrp":
+            case "LteRsrq":
+            case "LteRssnr":
             case "LteCqi":
             case "TdScdmaRscp":
             case "mGsmRssiQdbm":
@@ -200,6 +200,7 @@ public class MainActivity extends AppCompatActivity {
             case "mCi":
             case "mMcc":
             case "ta":
+            case "mTa":
             case "cqi":
                 return attributeValue != INVALID;
             default:

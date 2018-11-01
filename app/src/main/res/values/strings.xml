@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">NetworkInformation</string>
+    <string name="app_name">Network Information</string>
     <string name="unknown">Desconhecido</string>
-    <string name="s_only_valid">Somente Validos</string>
+    <string name="s_only_valid">Somente Válidos</string>
     <string name="s_show_all">Mostrar Todos</string>
 </resources>
