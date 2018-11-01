@@ -191,10 +191,16 @@ public class MainActivity extends AppCompatActivity {
             case "mLteRsrp":
             case "mLteRsrq":
             case "mLteRssnr":
-            case "mLteCqi":
-            case "mTdScdmaRscp":
+            case "LteCqi":
+            case "TdScdmaRscp":
             case "mGsmRssiQdbm":
             case "mWcdmaRscp":
+            case "rssnr":
+            case "mMnc":
+            case "mCi":
+            case "mMcc":
+            case "ta":
+            case "cqi":
                 return attributeValue != INVALID;
             default:
                 return true;
