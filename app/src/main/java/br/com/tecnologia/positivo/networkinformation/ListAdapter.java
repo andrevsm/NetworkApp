@@ -21,6 +21,7 @@ import java.util.List;
 public class ListAdapter extends RecyclerView.Adapter<ListAdapter.GeneralViewHolder> {
 
     private final List<String> items;
+    private static String networkType;
 
     ListAdapter(List<String> itemList) {
         items = itemList;
@@ -46,6 +47,7 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.GeneralViewHol
 
     void updateItems(HashMap<String, String> map) {
         items.clear();
+        items.add(networkType);
         for (String key: map.keySet()) {
             String item = map.get(key);
             if (TextUtils.isEmpty(item)) {
@@ -56,6 +58,9 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.GeneralViewHol
         notifyDataSetChanged();
     }
 
+    public static void setNetworkType(String networkType) {
+        ListAdapter.networkType = networkType;
+    }
 
     static class GeneralViewHolder extends RecyclerView.ViewHolder {
 

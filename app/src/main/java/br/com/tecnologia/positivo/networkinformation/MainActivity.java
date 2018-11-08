@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Parcel;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -12,6 +13,8 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.telephony.CellInfo;
+import android.telephony.CellInfoWcdma;
+import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
@@ -113,19 +116,20 @@ public class MainActivity extends AppCompatActivity {
         String netTypeStr = getNetWorkType();
 
         itemMap.put("Network Type", netTypeStr);
-        getCellInfo();
-        setPhoneStateListener();
+//        getCellInfo();
+        getInformations();
+//        setPhoneStateListener();
     }
 
     private void setPhoneStateListener() {
-        PhoneStateListener phoneStateListener = new PhoneStateListener() {
+        final PhoneStateListener phoneStateListener = new PhoneStateListener() {
             @Override
             public void onSignalStrengthsChanged(SignalStrength signalStrength) {
                 super.onSignalStrengthsChanged(signalStrength);
                 String signalStrJson = new Gson().toJson(signalStrength);
-                Log.d("TESTE","JSON PhoneState: "+signalStrJson);
+                Log.d("TESTE", "JSON PhoneState: " + signalStrJson);
                 String[] itemList = signalStrJson.replaceAll("[\"{}]", "").split(",");
-                itemMap.put("====="," PhoneState ====");
+                itemMap.put("=====", " PhoneState ====");
                 for (String anItemList : itemList) {
                     String[] split = anItemList.split(":");
                     String attributeName = split[0];
@@ -134,14 +138,14 @@ public class MainActivity extends AppCompatActivity {
                     if (onlyValidItems) {
                         try {
                             int attributeValue = Integer.parseInt(attributeValueString);
-                            Log.d("TESTE",attributeName+" - "+attributeValue+"="+isValidValue(attributeName, attributeValue));
                             if (isValidValue(attributeName, attributeValue)) {
                                 itemMap.put(attributeName, attributeValueString);
-                            }else Log.d("TESTE","Invalido Value: "+attributeName+":"+attributeValue);
+                            } else
+                                Log.d("TESTE", "Invalid Value: " + attributeName + ":" + attributeValue);
                         } catch (Exception e) {
                             itemMap.put(attributeName, attributeValueString);
                         }
-                    } else{
+                    } else {
                         itemMap.put(attributeName, attributeValueString);
                     }
                 }
@@ -222,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode== LOCATION_REQUEST_CODE) {
+        if (requestCode == LOCATION_REQUEST_CODE) {
             if (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 Log.i("TESTE", "Permission has been denied by user");
                 requestPermission();
@@ -231,83 +235,133 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-    private Boolean hasPermission(){
+
+    private Boolean hasPermission() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
+
     private void requestPermission() {
-        ActivityCompat.requestPermissions(this,PERMISSIONS,LOCATION_REQUEST_CODE);
+        ActivityCompat.requestPermissions(this, PERMISSIONS, LOCATION_REQUEST_CODE);
     }
 
     private void getCellInfo() {
-        if (hasPermission()){
+        if (hasPermission()) {
             List<CellInfo> cellInfoList = tm.getAllCellInfo();
-            Log.d("TESTE","JSON CellInfo: "+new Gson().toJson(cellInfoList));
-            itemMap.put("===="," CellInfo ====");
-            for (CellInfo cellInfo : cellInfoList)
-            {
+            CellInfoWcdma wcdma = (CellInfoWcdma) tm.getAllCellInfo().get(0);
+            Log.d("TESTE", "WCDMA: " + wcdma);
+            Log.d("TESTE", "JSON CellInfo: " + new Gson().toJson(cellInfoList));
+            itemMap.put("====", " CellInfo ====");
+            for (CellInfo cellInfo : cellInfoList) {
                 String cellInfoString = cellInfo.toString();
                 String removedSpecialCharacter = cellInfoString.replaceAll("[\"{}]", "");
                 String[] items = removedSpecialCharacter.split(" ");
 
-                for (String item:items){
+                for (String item : items) {
                     String suffix = removeSuffix(item, ":");
                     String[] attribute = suffix.split("=");
                     String attributeName = attribute[0];
-                    if (attribute.length>1){
+                    if (attribute.length > 1) {
                         String attributeValueString = attribute[1];
                         String s = removePreFix(attributeName);
-                        if (onlyValidItems){
+                        if (onlyValidItems) {
                             try {
                                 int attributeValue = Integer.parseInt(attributeValueString);
-                                if (isValidValue(attributeName, attributeValue)){
+                                if (isValidValue(attributeName, attributeValue)) {
                                     itemMap.put(s, attributeValueString);
-                                }else Log.d("TESTE","Invalido Value: "+attributeName+":"+attributeValue);
-                            }catch (Exception e){
+                                } else
+                                    Log.d("TESTE", "Invalido Value: " + attributeName + ":" + attributeValue);
+                            } catch (Exception e) {
                                 itemMap.put(s, attributeValueString);
                             }
-                        }else
+                        } else
                             itemMap.put(s, attributeValueString);
                     }
                 }
             }
             adapter.updateItems(itemMap);
-        }
-        else
+        } else
             requestPermission();
     }
-    public String removeSuffix(final String s, final String suffix){
+
+    public String removeSuffix(final String s, final String suffix) {
         if (s != null && s.contains(suffix)) {
             String[] split = s.split(suffix);
-            if (split.length>1)
+            if (split.length > 1)
                 return split[1];
-            else return split[0].replace(":","");
+            else return split[0].replace(":", "");
         }
         return s;
     }
 
     private String getNetWorkType() {
-
-        switch(tm.getNetworkType()){
-            case 0: return getString(R.string.unknown);
-            case 1: return "GPRS";
-            case 2: return "EDGE";
-            case 3: return "UMTS";
-            case 4: return "CDMA";
-            case 5: return "EVDO_0";
-            case 6: return "EVDO_A";
-            case 7: return "1xRTT";
-            case 8: return "HSDPA";
-            case 9: return "HSUPA";
-            case 10: return "HSPA";
-            case 11: return "iDen";
-            case 12: return "EVDO_B";
-            case 13: return "LTE";
-            case 14: return "eHRPD";
-            case 15: return "HSPA+";
+        switch (tm.getNetworkType()) {
+            case 0:
+                return getString(R.string.unknown);
+            case 1:
+                return "GPRS";
+            case 2:
+                return "EDGE";
+            case 3:
+                return "UMTS";
+            case 4:
+                return "CDMA";
+            case 5:
+                return "EVDO_0";
+            case 6:
+                return "EVDO_A";
+            case 7:
+                return "1xRTT";
+            case 8:
+                return "HSDPA";
+            case 9:
+                return "HSUPA";
+            case 10:
+                return "HSPA";
+            case 11:
+                return "iDen";
+            case 12:
+                return "EVDO_B";
+            case 13:
+                return "LTE";
+            case 14:
+                return "eHRPD";
+            case 15:
+                return "HSPA+";
             default:
                 return getString(R.string.unknown);
         }
+    }
+
+    private void getInformations() {
+        if (hasPermission()) {
+            List<CellInfo> cellInfoList = tm.getAllCellInfo();
+            CellInfoWcdma wcdma = (CellInfoWcdma)tm.getAllCellInfo().get(0);
+            CellSignalStrengthWcdma signalStrengthWcdma = wcdma.getCellSignalStrength();
+            int wcdmaDbm = signalStrengthWcdma.getDbm();
+            String wcdmaString = wcdma.toString();
+            String removedSpecialCharacter = wcdmaString.replaceAll("[\"{}]", "");
+            String[] items = removedSpecialCharacter.split(" ");
+//            Log.d("TESTE","WCDMA STRING: " + items[0]);
+//            Log.d("TESTE","JSON WCDMA: " + new Gson().toJson(items));
+            itemMap.put("Wcdma dBm", Integer.toString(wcdmaDbm));
+
+            for (String item : items){
+                String suffix = removeSuffix(item, ":");
+                String[] attribute = suffix.split("=");
+                String attributeName = attribute[0];
+                if (attribute.length>1){
+                    Log.d("TESTE","WCDMA SUFFIX: " + suffix);
+                    String attributeValueString = attribute[1];
+                    String s = removePreFix(attributeName);
+                    itemMap.put(s, attributeValueString);
+                }
+            }
+            ListAdapter.setNetworkType("WCDMA INFORMATION");
+            adapter.updateItems(itemMap);
+        }
+        else
+            requestPermission();
     }
 
 
