@@ -13,7 +13,11 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.telephony.CellInfo;
+import android.telephony.CellInfoGsm;
+import android.telephony.CellInfoLte;
 import android.telephony.CellInfoWcdma;
+import android.telephony.CellSignalStrengthGsm;
+import android.telephony.CellSignalStrengthLte;
 import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
@@ -77,7 +81,6 @@ public class MainActivity extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
-
     }
 
     private void setUI() {
@@ -114,11 +117,22 @@ public class MainActivity extends AppCompatActivity {
     private void loadData() {
         itemMap.clear();
         String netTypeStr = getNetWorkType();
-
-        itemMap.put("Network Type", netTypeStr);
-//        getCellInfo();
-        getInformations();
-//        setPhoneStateListener();
+        String netTypeSwitch = getNetWorkTypeInformation();
+        if(netTypeSwitch.equals("3G")) {
+            itemMap.put("Network Type", netTypeStr);
+            getWCDMAInfo();
+        } else if (netTypeSwitch.equals("2G")) {
+            itemMap.clear();
+            itemMap.put("Network Type", netTypeStr);
+            getGSMInfo();
+        } else if (netTypeSwitch.equals("4G")) {
+            itemMap.clear();
+            itemMap.put("Network Type", netTypeStr);
+            getLTEInfo();
+        } else {
+            itemMap.clear();
+            itemMap.put("Network Type", netTypeStr);
+        }
     }
 
     private void setPhoneStateListener() {
@@ -333,7 +347,25 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void getInformations() {
+    private String getNetWorkTypeInformation() {
+        switch (tm.getNetworkType()) {
+            case 1:
+            case 2:
+                return "2G";
+            case 3:
+            case 8:
+            case 9:
+            case 10:
+            case 15:
+                return "3G";
+            case 13:
+                return "4G";
+            default:
+                return getString(R.string.unknown);
+        }
+    }
+
+    private void getWCDMAInfo() {
         if (hasPermission()) {
             List<CellInfo> cellInfoList = tm.getAllCellInfo();
             CellInfoWcdma wcdma = (CellInfoWcdma)tm.getAllCellInfo().get(0);
@@ -349,7 +381,13 @@ public class MainActivity extends AppCompatActivity {
             for (String item : items){
                 String suffix = removeSuffix(item, ":");
                 String[] attribute = suffix.split("=");
+                if (suffix.contains("TimeStamp") ) {
+                    continue;
+                }
                 String attributeName = attribute[0];
+                if(attributeName.equals("ss")){
+                    attributeName = "Signal Strength";
+                }
                 if (attribute.length>1){
                     Log.d("TESTE","WCDMA SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
@@ -359,11 +397,82 @@ public class MainActivity extends AppCompatActivity {
             }
             ListAdapter.setNetworkType("WCDMA INFORMATION");
             adapter.updateItems(itemMap);
+            updateTimeLabel();
         }
         else
             requestPermission();
     }
 
+    private void getGSMInfo() {
+        if (hasPermission()) {
+            List<CellInfo> cellInfoList = tm.getAllCellInfo();
+            CellInfoGsm gsm = (CellInfoGsm)tm.getAllCellInfo().get(0);
+            CellSignalStrengthGsm signalStrengthGsm = gsm.getCellSignalStrength();
+            int gsmDbm = signalStrengthGsm.getDbm();
+            String gsmString = gsm.toString();
+            String removedSpecialCharacter = gsmString.replaceAll("[\"{}]", "");
+            String[] items = removedSpecialCharacter.split(" ");
+            itemMap.put("GSM dBm", Integer.toString(gsmDbm));
 
+            for (String item : items){
+                String suffix = removeSuffix(item, ":");
+                String[] attribute = suffix.split("=");
+                if (suffix.contains("TimeStamp") ) {
+                    continue;
+                }
+                String attributeName = attribute[0];
+                if(attributeName.equals("ss")){
+                    attributeName = "Signal Strength";
+                }
+                if (attribute.length>1){
+                    Log.d("TESTE","GSM SUFFIX: " + suffix);
+                    String attributeValueString = attribute[1];
+                    String s = removePreFix(attributeName);
+                    itemMap.put(s, attributeValueString);
+                }
+            }
+            ListAdapter.setNetworkType("GSM INFORMATION");
+            adapter.updateItems(itemMap);
+            updateTimeLabel();
+        }
+        else
+            requestPermission();
+    }
+
+    private void getLTEInfo() {
+        if (hasPermission()) {
+            List<CellInfo> cellInfoList = tm.getAllCellInfo();
+            CellInfoLte lte = (CellInfoLte)tm.getAllCellInfo().get(0);
+            CellSignalStrengthLte signalStrengthLte = lte.getCellSignalStrength();
+            int lteDbm = signalStrengthLte.getDbm();
+            String lteString = lte.toString();
+            String removedSpecialCharacter = lteString.replaceAll("[\"{}]", "");
+            String[] items = removedSpecialCharacter.split(" ");
+            itemMap.put("LTE dBm", Integer.toString(lteDbm));
+
+            for (String item : items){
+                String suffix = removeSuffix(item, ":");
+                String[] attribute = suffix.split("=");
+                if (suffix.contains("TimeStamp") ) {
+                    continue;
+                }
+                String attributeName = attribute[0];
+                if(attributeName.equals("ss")){
+                    attributeName = "Signal Strength";
+                }
+                if (attribute.length>1){
+                    Log.d("TESTE","LTE SUFFIX: " + suffix);
+                    String attributeValueString = attribute[1];
+                    String s = removePreFix(attributeName);
+                    itemMap.put(s, attributeValueString);
+                }
+            }
+            ListAdapter.setNetworkType("LTE INFORMATION");
+            adapter.updateItems(itemMap);
+            updateTimeLabel();
+        }
+        else
+            requestPermission();
+    }
 
 }
