@@ -90,7 +90,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateTimeLabel() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-YYY HH:mm:ss", Locale.getDefault());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-YYY HH:mm:ss",
+                Locale.getDefault());
         String updateText = "Ultima atualização: " + dateFormat.format(new Date());
         ((TextView) findViewById(R.id.tvi_update_date)).setText(updateText);
     }
@@ -101,7 +102,8 @@ public class MainActivity extends AppCompatActivity {
         rviListItems.setLayoutManager(new LinearLayoutManager(this));
         rviListItems.setHasFixedSize(true);
 
-        rviListItems.addItemDecoration(new DividerItemDecoration(rviListItems.getContext(), DividerItemDecoration.VERTICAL));
+        rviListItems.addItemDecoration(new DividerItemDecoration(rviListItems.getContext(),
+                DividerItemDecoration.VERTICAL));
         rviListItems.setAdapter(adapter);
     }
 
@@ -135,94 +137,81 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setPhoneStateListener() {
-        final PhoneStateListener phoneStateListener = new PhoneStateListener() {
-            @Override
-            public void onSignalStrengthsChanged(SignalStrength signalStrength) {
-                super.onSignalStrengthsChanged(signalStrength);
-                String signalStrJson = new Gson().toJson(signalStrength);
-                Log.d("TESTE", "JSON PhoneState: " + signalStrJson);
-                String[] itemList = signalStrJson.replaceAll("[\"{}]", "").split(",");
-                itemMap.put("=====", " PhoneState ====");
-                for (String anItemList : itemList) {
-                    String[] split = anItemList.split(":");
-                    String attributeName = split[0];
-                    String attributeValueString = split[1];
-                    attributeName = removePreFix(attributeName);
-                    if (onlyValidItems) {
-                        try {
-                            int attributeValue = Integer.parseInt(attributeValueString);
-                            if (isValidValue(attributeName, attributeValue)) {
-                                itemMap.put(attributeName, attributeValueString);
-                            } else
-                                Log.d("TESTE", "Invalid Value: " + attributeName + ":" + attributeValue);
-                        } catch (Exception e) {
-                            itemMap.put(attributeName, attributeValueString);
-                        }
-                    } else {
-                        itemMap.put(attributeName, attributeValueString);
-                    }
-                }
-                adapter.updateItems(itemMap);
-                updateTimeLabel();
-            }
-        };
-        tm.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
-    }
+//    private void setPhoneStateListener() {
+//        final PhoneStateListener phoneStateListener = new PhoneStateListener() {
+//            @Override
+//            public void onSignalStrengthsChanged(SignalStrength signalStrength) {
+//                super.onSignalStrengthsChanged(signalStrength);
+//                String signalStrJson = new Gson().toJson(signalStrength);
+//                Log.d("TESTE", "JSON PhoneState: " + signalStrJson);
+//                String[] itemList = signalStrJson.replaceAll("[\"{}]", "").split(",");
+//                itemMap.put("=====", " PhoneState ====");
+//                for (String anItemList : itemList) {
+//                    String[] split = anItemList.split(":");
+//                    String attributeName = split[0];
+//                    String attributeValueString = split[1];
+//                    attributeName = removePreFix(attributeName);
+//                    if (onlyValidItems) {
+//                        try {
+//                            int attributeValue = Integer.parseInt(attributeValueString);
+//                            if (isValidValue(attributeName, attributeValue)) {
+//                                itemMap.put(attributeName, attributeValueString);
+//                            } else
+//                                Log.d("TESTE", "Invalid Value: " + attributeName + ":" + attributeValue);
+//                        } catch (Exception e) {
+//                            itemMap.put(attributeName, attributeValueString);
+//                        }
+//                    } else {
+//                        itemMap.put(attributeName, attributeValueString);
+//                    }
+//                }
+//                adapter.updateItems(itemMap);
+//                updateTimeLabel();
+//            }
+//        };
+//        tm.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+//    }
 
-    public boolean isValidValue(String attributeName, int attributeValue) {
-        int invalidGsmSignalStrength = 99;
-        int invalidGsmBitErrorRate = -1;
-        int invalidCdmaDbm = -1;
-        int invalidCdmaEcio = -1;
-        int invalidEvdoDbm = -1;
-        int invalidEvdoEcio = -1;
-        int invalidEvdoSnr = -1;
-        int invalidLteSignalStrength = 99;
-        int invalidWcdmaSignalStrength = 99;
-        int invalidWcdmaRscpAsu = 255;
-        int invalidLteRsrpBoost = 0;
-        int INVALID = Integer.MAX_VALUE;
+    public boolean isValidValue(String attributeName, String attributeValue) {
+        String invalidGsmSignalStrength = "99";
+        String invalidGsmBitErrorRate = "-1";
+        String invalidCdmaDbm = "-1";
+        String invalidCdmaEcio = "-1";
+        String invalidEvdoDbm = "-1";
+        String invalidEvdoEcio = "-1";
+        String invalidEvdoSnr = "-1";
+        String invalidLteSignalStrength = "99";
+        String invalidWcdmaSignalStrength = "99";
+        String invalidWcdmaRscpAsu = "255";
+        String invalidLteRsrpBoost = "0";
+        if (attributeValue.equals(Integer.toString(Integer.MAX_VALUE))) {
+            return false;
+        }
         switch (attributeName) {
-            case "mGsmSignalStrength":
-                return attributeValue != invalidGsmSignalStrength;
-            case "mGsmBitErrorRate":
-                return attributeValue != invalidGsmBitErrorRate;
-            case "mCdmaDbm":
-                return attributeValue != invalidCdmaDbm;
-            case "mCdmaEcio":
-                return attributeValue != invalidCdmaEcio;
-            case "mEvdoDbm":
-                return attributeValue != invalidEvdoDbm;
-            case "mEvdoEcio":
-                return attributeValue != invalidEvdoEcio;
-            case "mEvdoSnr":
-                return attributeValue != invalidEvdoSnr;
-            case "mLteSignalStrength":
-                return attributeValue != invalidLteSignalStrength;
-            case "mWcdmaSignalStrength":
-                return attributeValue != invalidWcdmaSignalStrength;
-            case "mWcdmaRscpAsu":
-                return attributeValue != invalidWcdmaRscpAsu;
-            case "mLteRsrpBoost":
-                return attributeValue != invalidLteRsrpBoost;
-            case "LteRsrp":
-            case "LteRsrq":
-            case "LteRssnr":
-            case "LteCqi":
-            case "TdScdmaRscp":
-            case "mGsmRssiQdbm":
-            case "mWcdmaRscp":
-            case "rssnr":
-            case "mMnc":
-            case "mCi":
-            case "mMcc":
-            case "ta":
-            case "mTa":
-            case "cqi":
-                return attributeValue != INVALID;
-            default:
-                return true;
+        case "mGsmSignalStrength":
+            return !attributeValue.equals(invalidGsmSignalStrength);
+        case "mGsmBitErrorRate":
+            return !attributeValue.equals(invalidGsmBitErrorRate);
+        case "mCdmaDbm":
+            return !attributeValue.equals(invalidCdmaDbm);
+        case "mCdmaEcio":
+            return !attributeValue.equals(invalidCdmaEcio);
+        case "mEvdoDbm":
+            return !attributeValue.equals(invalidEvdoDbm);
+        case "mEvdoEcio":
+            return !attributeValue.equals(invalidEvdoEcio);
+        case "mEvdoSnr":
+            return !attributeValue.equals(invalidEvdoSnr);
+        case "mLteSignalStrength":
+            return !attributeValue.equals(invalidLteSignalStrength);
+        case "mWcdmaSignalStrength":
+            return !attributeValue.equals(invalidWcdmaSignalStrength);
+        case "mWcdmaRscpAsu":
+            return !attributeValue.equals(invalidWcdmaRscpAsu);
+        case "mLteRsrpBoost":
+            return !attributeValue.equals(invalidLteRsrpBoost);
+        default:
+            return true;
         }
     }
 
@@ -259,44 +248,44 @@ public class MainActivity extends AppCompatActivity {
         ActivityCompat.requestPermissions(this, PERMISSIONS, LOCATION_REQUEST_CODE);
     }
 
-    private void getCellInfo() {
-        if (hasPermission()) {
-            List<CellInfo> cellInfoList = tm.getAllCellInfo();
-            CellInfoWcdma wcdma = (CellInfoWcdma) tm.getAllCellInfo().get(0);
-            Log.d("TESTE", "WCDMA: " + wcdma);
-            Log.d("TESTE", "JSON CellInfo: " + new Gson().toJson(cellInfoList));
-            itemMap.put("====", " CellInfo ====");
-            for (CellInfo cellInfo : cellInfoList) {
-                String cellInfoString = cellInfo.toString();
-                String removedSpecialCharacter = cellInfoString.replaceAll("[\"{}]", "");
-                String[] items = removedSpecialCharacter.split(" ");
-
-                for (String item : items) {
-                    String suffix = removeSuffix(item, ":");
-                    String[] attribute = suffix.split("=");
-                    String attributeName = attribute[0];
-                    if (attribute.length > 1) {
-                        String attributeValueString = attribute[1];
-                        String s = removePreFix(attributeName);
-                        if (onlyValidItems) {
-                            try {
-                                int attributeValue = Integer.parseInt(attributeValueString);
-                                if (isValidValue(attributeName, attributeValue)) {
-                                    itemMap.put(s, attributeValueString);
-                                } else
-                                    Log.d("TESTE", "Invalido Value: " + attributeName + ":" + attributeValue);
-                            } catch (Exception e) {
-                                itemMap.put(s, attributeValueString);
-                            }
-                        } else
-                            itemMap.put(s, attributeValueString);
-                    }
-                }
-            }
-            adapter.updateItems(itemMap);
-        } else
-            requestPermission();
-    }
+//    private void getCellInfo() {
+//        if (hasPermission()) {
+//            List<CellInfo> cellInfoList = tm.getAllCellInfo();
+//            CellInfoWcdma wcdma = (CellInfoWcdma) tm.getAllCellInfo().get(0);
+//            Log.d("TESTE", "WCDMA: " + wcdma);
+//            Log.d("TESTE", "JSON CellInfo: " + new Gson().toJson(cellInfoList));
+//            itemMap.put("====", " CellInfo ====");
+//            for (CellInfo cellInfo : cellInfoList) {
+//                String cellInfoString = cellInfo.toString();
+//                String removedSpecialCharacter = cellInfoString.replaceAll("[\"{}]", "");
+//                String[] items = removedSpecialCharacter.split(" ");
+//
+//                for (String item : items) {
+//                    String suffix = removeSuffix(item, ":");
+//                    String[] attribute = suffix.split("=");
+//                    String attributeName = attribute[0];
+//                    if (attribute.length > 1) {
+//                        String attributeValueString = attribute[1];
+//                        String s = removePreFix(attributeName);
+//                        if (onlyValidItems) {
+//                            try {
+//                                int attributeValue = Integer.parseInt(attributeValueString);
+//                                if (isValidValue(attributeName, attributeValue)) {
+//                                    itemMap.put(s, attributeValueString);
+//                                } else
+//                                    Log.d("TESTE", "Invalido Value: " + attributeName + ":" + attributeValue);
+//                            } catch (Exception e) {
+//                                itemMap.put(s, attributeValueString);
+//                            }
+//                        } else
+//                            itemMap.put(s, attributeValueString);
+//                    }
+//                }
+//            }
+//            adapter.updateItems(itemMap);
+//        } else
+//            requestPermission();
+//    }
 
     public String removeSuffix(final String s, final String suffix) {
         if (s != null && s.contains(suffix)) {
@@ -374,8 +363,6 @@ public class MainActivity extends AppCompatActivity {
             String wcdmaString = wcdma.toString();
             String removedSpecialCharacter = wcdmaString.replaceAll("[\"{}]", "");
             String[] items = removedSpecialCharacter.split(" ");
-//            Log.d("TESTE","WCDMA STRING: " + items[0]);
-//            Log.d("TESTE","JSON WCDMA: " + new Gson().toJson(items));
             itemMap.put("Wcdma dBm", Integer.toString(wcdmaDbm));
 
             for (String item : items){
@@ -392,7 +379,9 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("TESTE","WCDMA SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
-                    itemMap.put(s, attributeValueString);
+                    if(isValidValue(attributeName, attributeValueString)){
+                        itemMap.put(s, attributeValueString);
+                    }
                 }
             }
             ListAdapter.setNetworkType("WCDMA INFORMATION");
@@ -428,7 +417,9 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("TESTE","GSM SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
-                    itemMap.put(s, attributeValueString);
+                    if(isValidValue(attributeName, attributeValueString)){
+                        itemMap.put(s, attributeValueString);
+                    }
                 }
             }
             ListAdapter.setNetworkType("GSM INFORMATION");
@@ -464,7 +455,9 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("TESTE","LTE SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
-                    itemMap.put(s, attributeValueString);
+                    if(isValidValue(attributeName, attributeValueString)){
+                        itemMap.put(s, attributeValueString);
+                    }
                 }
             }
             ListAdapter.setNetworkType("LTE INFORMATION");
