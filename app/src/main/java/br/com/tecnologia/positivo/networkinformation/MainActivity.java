@@ -40,6 +40,7 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private static final int LOCATION_REQUEST_CODE = 123;//any number
+    boolean btnStart;
     TelephonyManager tm;
     int PERMISSION_ALL = 1;
     String[] PERMISSIONS = {
@@ -108,10 +109,38 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setListener() {
-        findViewById(R.id.btnRefresh).setOnClickListener(new View.OnClickListener() {
+        final TextView btnRefresh = findViewById(R.id.btnRefresh);
+        btnRefresh.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loadData();
+                if(btnStart == false){
+                    btnStart = true;
+                    btnRefresh.setText(R.string.stop);
+                } else {
+                    btnStart = false;
+                    btnRefresh.setText(R.string.start);
+                }
+
+                if(btnStart) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            while (btnStart) {
+                                try {
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            loadData();
+                                        }
+                                    });
+                                    Thread.sleep(3000);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                    }).start();
+                }
             }
         });
     }
@@ -134,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             itemMap.clear();
             itemMap.put("Network Type", netTypeStr);
+            adapter.updateItems(itemMap);
         }
     }
 
@@ -142,31 +172,8 @@ public class MainActivity extends AppCompatActivity {
 //            @Override
 //            public void onSignalStrengthsChanged(SignalStrength signalStrength) {
 //                super.onSignalStrengthsChanged(signalStrength);
-//                String signalStrJson = new Gson().toJson(signalStrength);
-//                Log.d("TESTE", "JSON PhoneState: " + signalStrJson);
-//                String[] itemList = signalStrJson.replaceAll("[\"{}]", "").split(",");
-//                itemMap.put("=====", " PhoneState ====");
-//                for (String anItemList : itemList) {
-//                    String[] split = anItemList.split(":");
-//                    String attributeName = split[0];
-//                    String attributeValueString = split[1];
-//                    attributeName = removePreFix(attributeName);
-//                    if (onlyValidItems) {
-//                        try {
-//                            int attributeValue = Integer.parseInt(attributeValueString);
-//                            if (isValidValue(attributeName, attributeValue)) {
-//                                itemMap.put(attributeName, attributeValueString);
-//                            } else
-//                                Log.d("TESTE", "Invalid Value: " + attributeName + ":" + attributeValue);
-//                        } catch (Exception e) {
-//                            itemMap.put(attributeName, attributeValueString);
-//                        }
-//                    } else {
-//                        itemMap.put(attributeName, attributeValueString);
-//                    }
-//                }
-//                adapter.updateItems(itemMap);
 //                updateTimeLabel();
+//                loadData();
 //            }
 //        };
 //        tm.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
@@ -376,7 +383,7 @@ public class MainActivity extends AppCompatActivity {
                     attributeName = "Signal Strength";
                 }
                 if (attribute.length>1){
-                    Log.d("TESTE","WCDMA SUFFIX: " + suffix);
+//                    Log.d("TESTE","WCDMA SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
                     if(isValidValue(attributeName, attributeValueString)){
@@ -414,7 +421,7 @@ public class MainActivity extends AppCompatActivity {
                     attributeName = "Signal Strength";
                 }
                 if (attribute.length>1){
-                    Log.d("TESTE","GSM SUFFIX: " + suffix);
+//                    Log.d("TESTE","GSM SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
                     if(isValidValue(attributeName, attributeValueString)){
@@ -452,7 +459,7 @@ public class MainActivity extends AppCompatActivity {
                     attributeName = "Signal Strength";
                 }
                 if (attribute.length>1){
-                    Log.d("TESTE","LTE SUFFIX: " + suffix);
+//                    Log.d("TESTE","LTE SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
                     if(isValidValue(attributeName, attributeValueString)){
