@@ -47,7 +47,7 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.GeneralViewHol
 
     void updateItems(HashMap<String, String> map) {
         items.clear();
-        items.add("----------- " + networkType + " -----------");
+        items.add("-------- " + networkType + " --------");
         for (String key: map.keySet()) {
             String item = map.get(key);
             if (TextUtils.isEmpty(item)) {
