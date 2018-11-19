@@ -167,17 +167,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    private void setPhoneStateListener() {
-//        final PhoneStateListener phoneStateListener = new PhoneStateListener() {
-//            @Override
-//            public void onSignalStrengthsChanged(SignalStrength signalStrength) {
-//                super.onSignalStrengthsChanged(signalStrength);
-//                updateTimeLabel();
-//                loadData();
-//            }
-//        };
-//        tm.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
-//    }
+    private void setPhoneStateListener() {
+        final PhoneStateListener phoneStateListener = new PhoneStateListener() {
+            @Override
+            public void onSignalStrengthsChanged(SignalStrength signalStrength) {
+                super.onSignalStrengthsChanged(signalStrength);
+                String signalStrJson = new Gson().toJson(signalStrength);
+                String[] itemList = signalStrJson.replaceAll("[\"{}]", "").split(",");
+                Log.d("TESTE", "JSON CellInfo: " + new Gson().toJson(signalStrength));
+                for (String anItemList : itemList) {
+                    String[] split = anItemList.split(":");
+                    String attributeName = split[0];
+                    if (split.length>1){
+                        String s = removePreFix(attributeName);
+                        String attributeValueString = split[1];
+                        attributeValueString = removeSuffix(attributeValueString, "0");
+                        if(isRequiredValue(attributeName)){
+                            itemMap.put(s, attributeValueString);
+                            adapter.updateItems(itemMap);
+                        }
+                    }
+                }
+            }
+        };
+        tm.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+    }
 
     public boolean isValidValue(String attributeName, String attributeValue) {
         String invalidGsmSignalStrength = "99";
@@ -361,9 +375,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private boolean isRequiredValue(String attributeName) {
+        if(attributeName.equals("mCdmaEcio") || attributeName.equals("CdmaEcio")) {
+            return true;
+        }
+        return false;
+    }
+
     private void getWCDMAInfo() {
         if (hasPermission()) {
-            List<CellInfo> cellInfoList = tm.getAllCellInfo();
+//            List<CellInfo> cellInfoList = tm.getAllCellInfo();
             CellInfoWcdma wcdma = (CellInfoWcdma)tm.getAllCellInfo().get(0);
             CellSignalStrengthWcdma signalStrengthWcdma = wcdma.getCellSignalStrength();
             int wcdmaDbm = signalStrengthWcdma.getDbm();
@@ -383,7 +404,6 @@ public class MainActivity extends AppCompatActivity {
                     attributeName = "Signal Strength";
                 }
                 if (attribute.length>1){
-//                    Log.d("TESTE","WCDMA SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
                     if(isValidValue(attributeName, attributeValueString)){
@@ -391,8 +411,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-            ListAdapter.setNetworkType("WCDMA INFORMATION");
             adapter.updateItems(itemMap);
+            ListAdapter.setNetworkType("WCDMA INFORMATION");
+            setPhoneStateListener();
             updateTimeLabel();
         }
         else
@@ -401,7 +422,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void getGSMInfo() {
         if (hasPermission()) {
-            List<CellInfo> cellInfoList = tm.getAllCellInfo();
             CellInfoGsm gsm = (CellInfoGsm)tm.getAllCellInfo().get(0);
             CellSignalStrengthGsm signalStrengthGsm = gsm.getCellSignalStrength();
             int gsmDbm = signalStrengthGsm.getDbm();
@@ -421,7 +441,6 @@ public class MainActivity extends AppCompatActivity {
                     attributeName = "Signal Strength";
                 }
                 if (attribute.length>1){
-//                    Log.d("TESTE","GSM SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
                     if(isValidValue(attributeName, attributeValueString)){
@@ -429,8 +448,10 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-            ListAdapter.setNetworkType("GSM INFORMATION");
+
             adapter.updateItems(itemMap);
+            ListAdapter.setNetworkType("GSM INFORMATION");
+            setPhoneStateListener();
             updateTimeLabel();
         }
         else
@@ -439,7 +460,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void getLTEInfo() {
         if (hasPermission()) {
-            List<CellInfo> cellInfoList = tm.getAllCellInfo();
             CellInfoLte lte = (CellInfoLte)tm.getAllCellInfo().get(0);
             CellSignalStrengthLte signalStrengthLte = lte.getCellSignalStrength();
             int lteDbm = signalStrengthLte.getDbm();
@@ -459,7 +479,6 @@ public class MainActivity extends AppCompatActivity {
                     attributeName = "Signal Strength";
                 }
                 if (attribute.length>1){
-//                    Log.d("TESTE","LTE SUFFIX: " + suffix);
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
                     if(isValidValue(attributeName, attributeValueString)){
@@ -467,8 +486,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-            ListAdapter.setNetworkType("LTE INFORMATION");
             adapter.updateItems(itemMap);
+            ListAdapter.setNetworkType("LTE INFORMATION");
             updateTimeLabel();
         }
         else
