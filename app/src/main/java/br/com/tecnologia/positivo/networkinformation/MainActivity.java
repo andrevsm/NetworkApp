@@ -12,6 +12,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.telephony.CellIdentityWcdma;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoGsm;
 import android.telephony.CellInfoLte;
@@ -174,14 +175,14 @@ public class MainActivity extends AppCompatActivity {
                 super.onSignalStrengthsChanged(signalStrength);
                 String signalStrJson = new Gson().toJson(signalStrength);
                 String[] itemList = signalStrJson.replaceAll("[\"{}]", "").split(",");
-                Log.d("TESTE", "JSON CellInfo: " + new Gson().toJson(signalStrength));
+                Log.d("TESTE", "JSONPHONESTATE: " + new Gson().toJson(signalStrength));
                 for (String anItemList : itemList) {
                     String[] split = anItemList.split(":");
                     String attributeName = split[0];
                     if (split.length>1){
                         String s = removePreFix(attributeName);
                         String attributeValueString = split[1];
-                        attributeValueString = removeSuffix(attributeValueString, "0");
+//                        attributeValueString = removeSuffix(attributeValueString, "0");
                         if(isRequiredValue(attributeName)){
                             itemMap.put(s, attributeValueString);
                             adapter.updateItems(itemMap);
@@ -376,17 +377,68 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isRequiredValue(String attributeName) {
-        if(attributeName.equals("mCdmaEcio") || attributeName.equals("CdmaEcio")) {
-            return true;
+        String type = getNetWorkTypeInformation();
+        if(type.equals("3G")){
+            if(attributeName.equals("mCdmaEcio") || attributeName.equals("mEvdoDbm")) {
+                return true;
+            }
+        } else if(type.equals("2G")){
+
+        } else if(type.equals("4G")){
+
         }
+
         return false;
+    }
+
+    private String setArfcn(int attributeValue) {
+        String type = getNetWorkTypeInformation();
+//        Log.d("TESTE", "JSONATTRVALUE: " + attributeValue);
+        if(type.equals("3G")){
+            if(attributeValue >= 10562 && attributeValue <= 10838) {
+                return "2100";
+            }
+            if(attributeValue >= 4357 && attributeValue <= 4458) {
+                return "850";
+            }
+            switch (attributeValue) {
+                case 1007:
+                case 1012:
+                case 1032:
+                case 1037:
+                case 1062:
+                case 1087:
+                    return "850";
+            }
+        } else if(type.equals("2G")){
+            if(attributeValue >= 128 && attributeValue <= 251) {
+                return "GSM-850";
+            }
+            if(attributeValue >= 0 && attributeValue <= 124 || attributeValue >= 975 && attributeValue <= 1023) {
+                return "EGSM-900";
+            }
+            if(attributeValue >= 512 && attributeValue <= 885) {
+                return "DCS-1800";
+            }
+        } else if(type.equals("4G")){
+            if(attributeValue >= 1200 && attributeValue <= 1949) {
+                return "1800";
+            }
+            if(attributeValue >= 2750 && attributeValue <= 3449) {
+                return "2600";
+            }
+            if(attributeValue >= 9210 && attributeValue <= 9659) {
+                return "700";
+            }
+        }
+        return "unknown";
     }
 
     private void getWCDMAInfo() {
         if (hasPermission()) {
-//            List<CellInfo> cellInfoList = tm.getAllCellInfo();
             CellInfoWcdma wcdma = (CellInfoWcdma)tm.getAllCellInfo().get(0);
             CellSignalStrengthWcdma signalStrengthWcdma = wcdma.getCellSignalStrength();
+//            Log.d("TESTE", "JSONWCDMACELLINFO: " + signalStrengthWcdma);
             int wcdmaDbm = signalStrengthWcdma.getDbm();
             String wcdmaString = wcdma.toString();
             String removedSpecialCharacter = wcdmaString.replaceAll("[\"{}]", "");
@@ -396,13 +448,29 @@ public class MainActivity extends AppCompatActivity {
             for (String item : items){
                 String suffix = removeSuffix(item, ":");
                 String[] attribute = suffix.split("=");
+
                 if (suffix.contains("TimeStamp") ) {
                     continue;
                 }
                 String attributeName = attribute[0];
+
                 if(attributeName.equals("ss")){
                     attributeName = "Signal Strength";
                 }
+
+                if(attributeName.equals("mUarfcn")){
+                    int attValue = Integer.parseInt(attribute[1]);
+                    String stringValue = setArfcn(attValue) + " Mhz";
+                    attributeName = "UMTS Frequency";
+                    itemMap.put(attributeName, stringValue);
+                    if(stringValue.equals("2100 Mhz")) {
+                        itemMap.put("Band", " 1");
+                    } else if (stringValue.equals("850 Mhz")) {
+                        itemMap.put("Band", " 5");
+                    }
+                    continue;
+                }
+
                 if (attribute.length>1){
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
@@ -423,7 +491,9 @@ public class MainActivity extends AppCompatActivity {
     private void getGSMInfo() {
         if (hasPermission()) {
             CellInfoGsm gsm = (CellInfoGsm)tm.getAllCellInfo().get(0);
+//            Log.d("TESTE", "JSONGSM: " + gsm);
             CellSignalStrengthGsm signalStrengthGsm = gsm.getCellSignalStrength();
+//            Log.d("TESTE", "JSONGSMSIGNAL: " + signalStrengthGsm);
             int gsmDbm = signalStrengthGsm.getDbm();
             String gsmString = gsm.toString();
             String removedSpecialCharacter = gsmString.replaceAll("[\"{}]", "");
@@ -440,6 +510,16 @@ public class MainActivity extends AppCompatActivity {
                 if(attributeName.equals("ss")){
                     attributeName = "Signal Strength";
                 }
+
+                if(attributeName.equals("mArfcn")){
+                    int attValue = Integer.parseInt(attribute[1]);
+                    String stringValue = setArfcn(attValue) + " Mhz";
+//                    Log.d("TESTE", "GSMattValue: " + attValue);
+                    attributeName = "GSM Frequency";
+                    itemMap.put(attributeName, stringValue);
+                    continue;
+                }
+
                 if (attribute.length>1){
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
@@ -461,6 +541,7 @@ public class MainActivity extends AppCompatActivity {
     private void getLTEInfo() {
         if (hasPermission()) {
             CellInfoLte lte = (CellInfoLte)tm.getAllCellInfo().get(0);
+//            Log.d("TESTE", "JSONLTE: " + lte);
             CellSignalStrengthLte signalStrengthLte = lte.getCellSignalStrength();
             int lteDbm = signalStrengthLte.getDbm();
             String lteString = lte.toString();
@@ -478,6 +559,23 @@ public class MainActivity extends AppCompatActivity {
                 if(attributeName.equals("ss")){
                     attributeName = "Signal Strength";
                 }
+
+                if(attributeName.equals("mEarfcn")){
+                    int attValue = Integer.parseInt(attribute[1]);
+//                    Log.d("TESTE", "JSONVALUE: " + attValue);
+                    String stringValue = setArfcn(attValue) + " Mhz";
+                    attributeName = "LTE Frequency";
+                    itemMap.put(attributeName, stringValue);
+                    if(stringValue.equals("1800 Mhz")) {
+                        itemMap.put("Band", " 3");
+                    } else if (stringValue.equals("2600 Mhz")) {
+                        itemMap.put("Band", " 7");
+                    } else if (stringValue.equals("700 Mhz")) {
+                        itemMap.put("Band", " 28");
+                    }
+                    continue;
+                }
+
                 if (attribute.length>1){
                     String attributeValueString = attribute[1];
                     String s = removePreFix(attributeName);
